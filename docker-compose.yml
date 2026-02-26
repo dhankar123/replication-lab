@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  primary:
+    image: postgres:15
+    container_name: pg_primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: testdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - primary_data:/var/lib/postgresql/data
+      - ./primary/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - pgnet
+
+  standby:
+    image: postgres:15
+    container_name: pg_standby
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    depends_on:
+      - primary
+    volumes:
+      - standby_data:/var/lib/postgresql/data
+    networks:
+      - pgnet
+    command: >
+      bash -c "
+      sleep 10 &&
+      rm -rf /var/lib/postgresql/data/* &&
+      PGPASSWORD=replica123 pg_basebackup
+      -h primary -D /var/lib/postgresql/data
+      -U replicator -v -P --wal-method=stream &&
+      echo \"primary_conninfo='host=primary port=5432 user=replicator password=replica123'\" >> /var/lib/postgresql/data/postgresql.auto.conf &&
+      touch /var/lib/postgresql/data/standby.signal &&
+      postgres
+      "
+
+volumes:
+  primary_data:
+  standby_data:
+
+networks:
+  pgnet:
