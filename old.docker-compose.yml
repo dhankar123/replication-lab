@@ -2,14 +2,14 @@ version: '3.8'
 
 services:
   primary:
-    image: postgres:15
+    image: postgres:18
     container_name: pg_primary
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: testdb
     ports:
-      - "5432:5432"
+      - "5434:5434"
     volumes:
       - primary_data:/var/lib/postgresql/data
       - ./primary/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -17,7 +17,7 @@ services:
       - pgnet
 
   standby:
-    image: postgres:15
+    image: postgres:18
     container_name: pg_standby
     environment:
       POSTGRES_USER: postgres
